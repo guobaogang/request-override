@@ -1,0 +1,52 @@
+.main-page {
+  max-width: 1600px;
+
+  .header {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+
+    .description {
+      font-size: 14px;
+      color: #999;
+      margin-left: 10px;
+    }
+  }
+
+  .content {
+
+    .rules {
+      .rule {
+        display: flex;
+        align-items: center;
+
+        & > div {
+          margin-right: 15px;
+        }
+
+        .rule-url {
+          flex: 1;
+        }
+      }
+    }
+  }
+}
+
+.edit-rule-drawer {
+  height: 100%;
+
+  .edit-rule-form {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+
+    .edit-rule-data {
+      flex: 1;
+
+      .ant-form-item-row, .ant-form-item-control-input, .ant-form-item-control-input-content, textarea {
+        height: 100%;
+      }
+    }
+  }
+}

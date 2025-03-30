@@ -1,0 +1,33 @@
+{
+  "name": "My AJAX Data Modifier",
+  "version": "1.0",
+  "description": "Modify AJAX request return data for all websites",
+  "manifest_version": 3,
+  "permissions": [
+    "declarativeNetRequest",
+    "declarativeNetRequestFeedback",
+    "declarativeNetRequestWithHostAccess",
+    "webRequest",
+    "storage",
+    "unlimitedStorage",
+    "scripting",
+    "activeTab",
+    "tabs"
+  ],
+  "host_permissions":[
+    "https://*/*",
+    "http://*/*"
+  ],
+  "action": {
+    "default_tab": "dist/index.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}
