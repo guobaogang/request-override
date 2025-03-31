@@ -1,7 +1,7 @@
 // 更新拦截规则
 function updateRules(rule, sendResponse) {
     if (!rule.ruleId) {
-        sendResponse({status: 'error', message: 'ruleId异常，设置规则失败！'})
+        sendResponse && sendResponse({status: 'error', message: 'ruleId异常，设置规则失败！'})
         return
     }
     if (rule.isEnabled) {
@@ -22,13 +22,13 @@ function updateRules(rule, sendResponse) {
             }],
             removeRuleIds: [rule.ruleId] // 使用整数数组
         }, () => {
-            sendResponse({status: 'success', message: `已添加规则 ${rule.ruleId}`})
+            sendResponse && sendResponse({status: 'success', message: `已添加规则 ${rule.ruleId}`})
         });
     } else {
         chrome.declarativeNetRequest.updateDynamicRules({
             removeRuleIds: [rule.ruleId] // 使用整数数组
         }, () => {
-            sendResponse({status: 'success', message: `已删除规则 ${rule.ruleId}`})
+            sendResponse && sendResponse({status: 'success', message: `已删除规则 ${rule.ruleId}`})
         });
     }
 }
@@ -87,7 +87,15 @@ chrome.declarativeNetRequest.onRuleMatchedDebug.addListener((info) => {
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "updateRule") {
+    if (request.action === "initRules") {
+        request.rules.forEach(rule => {
+            if (rule.type === 'request-redirect') {
+                updateRequestRules(rule)
+            } else {
+                updateRules(rule)
+            }
+        })
+    } else if (request.action === "updateRule") {
         if (request.rule) {
             if (request.rule.type === 'request-redirect') {
                 updateRequestRules(request.rule, sendResponse)
@@ -130,15 +138,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 function updateRequestRules(rule, sendResponse) {
     if (!rule.ruleId) {
-        sendResponse({status: 'error', message: 'ruleId异常，设置规则失败！'})
+        sendResponse && sendResponse({status: 'error', message: 'ruleId异常，设置规则失败！'})
         return
     }
     if (rule.isEnabled) {
+
+        let newUrl = rule.newUrl
+        let Referer = rule.newUrl
+        let redirect = {
+            url: rule.newUrl
+        }
+
+        if (rule.redirectMode === 'host-redirect') {
+            redirect = {
+                transform: {
+                    scheme: rule.redirectScheme,
+                    host: rule.redirectHost,
+                    port: rule.redirectPort || ''
+                }
+            }
+            newUrl = '||' + rule.redirectHost
+            Referer = `${rule.redirectScheme}://${rule.redirectHost}${rule.redirectPort ? (":" + rule.redirectPort) : ''}`
+        }
+
         let requestHeaders = [
             {
                 header: "Referer",
                 operation: "set",
-                value: rule.newUrl
+                value: Referer
+            },
+            {
+                header: "test-data",
+                operation: "set",
+                value: Referer
             }
         ]
 
@@ -156,16 +188,17 @@ function updateRequestRules(rule, sendResponse) {
                     }
                 })
             } catch (e) {
-                console.error(e)
                 requestHeaders = [
                     {
                         header: "Referer",
                         operation: "set",
-                        value: rule.newUrl
+                        value: Referer
                     }
                 ]
             }
         }
+
+
         chrome.declarativeNetRequest.updateDynamicRules({
             addRules: [
                 {
@@ -173,13 +206,11 @@ function updateRequestRules(rule, sendResponse) {
                     priority: 1,
                     action: {
                         type: "redirect",
-                        redirect: {
-                            url: rule.newUrl
-                        }
+                        redirect: redirect
                     },
                     condition: {
                         urlFilter: rule.targetUrl,
-                        resourceTypes: ["main_frame", "xmlhttprequest"]
+                        resourceTypes: ["main_frame", "sub_frame", "xmlhttprequest"]
                     }
                 },
                 {
@@ -190,8 +221,8 @@ function updateRequestRules(rule, sendResponse) {
                         requestHeaders: requestHeaders
                     },
                     condition: {
-                        urlFilter: rule.targetUrl,
-                        resourceTypes: ["xmlhttprequest"]
+                        urlFilter: newUrl,
+                        resourceTypes: ["main_frame", "sub_frame", "xmlhttprequest"]
                     }
                 },
                 {
@@ -218,19 +249,19 @@ function updateRequestRules(rule, sendResponse) {
                         ]
                     },
                     condition: {
-                        urlFilter: rule.targetUrl,
-                        resourceTypes: ["xmlhttprequest"]
+                        urlFilter: newUrl,
+                        resourceTypes: ["main_frame", "sub_frame", "xmlhttprequest"]
                     }
                 }],
             removeRuleIds: rule.link // 使用整数数组
         }, () => {
-            sendResponse({status: 'success', message: `已添加规则 ${rule.ruleId}`})
+            sendResponse && sendResponse({status: 'success', message: `已添加规则 ${rule.ruleId}`})
         });
     } else {
         chrome.declarativeNetRequest.updateDynamicRules({
             removeRuleIds: rule.link // 使用整数数组
         }, () => {
-            sendResponse({status: 'success', message: `已删除规则 ${rule.ruleId}`})
+            sendResponse && sendResponse({status: 'success', message: `已删除规则 ${rule.ruleId}`})
         });
     }
 }
